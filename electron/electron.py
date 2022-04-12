@@ -24,6 +24,16 @@ def load_data(filename : str):
     return dataframe.AsNumpy()
 
 
+def unpack_digit_indices(digit_indices):
+    unpacked_digit_indices = []
+    for index in range(6):
+        column = []
+        for item in digit_indices:
+            column.append(item[index])
+        unpacked_digit_indices.append(column)
+    return unpacked_digit_indices
+
+
 def shuffle_data(rng, data, labels):
     assert(len(data) == len(labels))
     permutation = rng.permutation(len(data))
@@ -41,7 +51,7 @@ def __main__():
     if "digit_indices" not in columns:
         print("Missing training data.")
         return
-    data = dataframe["digit_indices"]
+    data = unpack_digit_indices(dataframe["digit_indices"])
     print(f"Number of entries: {len(data)}")
     data_electron = data[labels == 1]
     data_other = data[labels == 0]
