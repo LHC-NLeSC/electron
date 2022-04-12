@@ -36,6 +36,10 @@ def __main__():
         print("Missing training data.")
         return
     data = dataframe["digit_indices"]
+    print(f"Number of entries: {len(data)}")
+    data_electron = data[labels == 1]
+    data_other = data[labels == 0]
+    print(f"Number of electrons ({len(data_electron)}) and other particles ({len(data_other)})")
 
 
 if __name__ == "__main__":
