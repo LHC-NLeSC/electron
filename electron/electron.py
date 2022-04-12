@@ -1,6 +1,9 @@
 import argparse
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
+import onnx
+import tf2onnx
 from os import environ
 from ROOT import TFile, RDataFrame
 
@@ -13,6 +16,14 @@ columns = None
 def command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--filename", help="ROOT file containing the training data set", type=str, required=True)
+    # parameters
+    parser.add_argument("--epochs", help="Number of epochs", type=int, default=512)
+    parser.add_argument("--batch", help="Batch size", type=int, default=1024)
+    # preprocessing
+    parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
+    # data
+    parser.add_argument("--plot", help="Plot accuracy over time", action="store_true")
+    parser.add_argument("--save", help="Save the trained model to disk", action="store_true")
     return parser.parse_args()
 
 
@@ -62,7 +73,7 @@ def __main__():
     rng.shuffle(data_other)
     data_other = data_other[:len(data_electron)]
     # create training and testing data set
-    data = np.concatenate((data_electron, data_other))
+    data = np.vstack((data_electron, data_other))
     labels_electron = np.ones((len(data_electron), 1), dtype=int)
     labels_other = np.zeros((len(data_other), 1), dtype=int)
     labels = np.vstack((labels_electron, labels_other))
@@ -70,7 +81,70 @@ def __main__():
     test_point = int(len(data) * 0.8)
     print(f"Training set size: {test_point}")
     print(f"Test set size: {len(data) - test_point}")
+    # model
+    num_features = 6
+    if arguments.normalize:
+        print("Normalization enabled")
+        normalization_layer = tf.keras.layers.Normalization()
+        normalization_layer.adapt(data[:test_point])
+        model = tf.keras.Sequential([
+            normalization_layer,
+            tf.keras.layers.Dense(units=((num_features + 1) / 2), activation="relu"),
+            tf.keras.layers.Dense(units=1)
+            ])
+    else:
+        model = tf.keras.Sequential([
+            tf.keras.layers.Dense(units=((num_features + 1) / 2), input_dim=num_features, activation="relu"),
+            tf.keras.layers.Dense(units=1)
+            ])
+    print()
+    model.summary()
+    print()
+    model.compile(
+        optimizer="adam",
+        loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+        metrics=["accuracy"]
+        )
+    # training
+    num_epochs = arguments.epochs
+    batch_size = arguments.batch
+    training_history = model.fit(
+        data[:test_point],
+        labels[:test_point],
+        validation_split=0.2,
+        epochs=num_epochs,
+        batch_size=batch_size,
+        verbose=0
+        )
+    # evaluation
+    loss, accuracy = model.evaluate(data[test_point:], labels[test_point:], verbose=0)
+    print(f"Loss: {loss}, Accuracy: {accuracy}")
+    # plotting
+    if arguments.plot:
+        epochs = np.arange(0, num_epochs)
+        plt.plot(epochs, training_history.history["loss"], "bo", label="Training loss")
+        plt.plot(epochs, training_history.history["val_loss"], "ro", label="Validation loss")
+        plt.title("Loss")
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.legend(loc="upper right")
+        plt.show()
+        plt.plot(epochs, training_history.history["accuracy"], "b", label="Training accuracy")
+        plt.plot(epochs, training_history.history["val_accuracy"], "r", label="Validation accuracy")
+        plt.title("Accuracy")
+        plt.xlabel("Epochs")
+        plt.ylabel("Accuracy")
+        plt.legend(loc="lower right")
+        plt.show()
 
+    # save model
+    if arguments.save:
+        print("Saving model to disk")
+        model.save("ghostprob_model.h5")
+        print("Saving model to ONNX format")
+        input_signature = [tf.TensorSpec(input.shape, input.dtype) for input in model.inputs]
+        model_onnx, _ = tf2onnx.convert.from_keras(model, input_signature)
+        onnx.save(model_onnx, "ghostprob_model.onnx")
 
 if __name__ == "__main__":
     __main__()
