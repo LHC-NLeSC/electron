@@ -52,7 +52,8 @@ def __main__():
         print("Missing training data.")
         return
     data = unpack_digit_indices(dataframe["digit_indices"])
-    print(f"Number of entries: {len(data)}")
+    print(f"Number of entries: {len(data[0])}")
+    data = np.hstack([data[i].reshape(len(data[0]), 1) for i in range(len(data))])
     data_electron = data[labels == 1]
     data_other = data[labels == 0]
     print(f"Number of electrons ({len(data_electron)}) and other particles ({len(data_other)}) in data set")
