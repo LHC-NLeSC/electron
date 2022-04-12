@@ -136,7 +136,6 @@ def __main__():
         plt.ylabel("Accuracy")
         plt.legend(loc="lower right")
         plt.show()
-
     # save model
     if arguments.save:
         print("Saving model to disk")
