@@ -24,6 +24,12 @@ def load_data(filename : str):
     return dataframe.AsNumpy()
 
 
+def shuffle_data(rng, data, labels):
+    assert(len(data) == len(labels))
+    permutation = rng.permutation(len(data))
+    return data[permutation], labels[permutation]
+
+
 def __main__():
     arguments = command_line()
     dataframe = load_data(arguments.filename)
@@ -44,6 +50,15 @@ def __main__():
     rng = np.random.default_rng()
     rng.shuffle(data_other)
     data_other = data_other[:len(data_electron)]
+    # create training and testing data set
+    data = np.vstack((data_electron, data_other))
+    labels_electron = np.ones((len(data_electron), 1), dtype=int)
+    labels_other = np.ones((len(data_other), 1), dtype=int)
+    labels = np.vstack((labels_electron, labels_other))
+    data, labels = shuffle_data(rng, data, labels)
+    test_point = int(len(data) * 0.8)
+    print(f"Training set size: {test_point}")
+    print(f"Test set size: {len(data) - test_point}")
 
 
 if __name__ == "__main__":
