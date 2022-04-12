@@ -53,7 +53,7 @@ def __main__():
     # create training and testing data set
     data = np.vstack((data_electron, data_other))
     labels_electron = np.ones((len(data_electron), 1), dtype=int)
-    labels_other = np.ones((len(data_other), 1), dtype=int)
+    labels_other = np.zeros((len(data_other), 1), dtype=int)
     labels = np.vstack((labels_electron, labels_other))
     data, labels = shuffle_data(rng, data, labels)
     test_point = int(len(data) * 0.8)
