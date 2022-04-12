@@ -51,7 +51,7 @@ def __main__():
     rng.shuffle(data_other)
     data_other = data_other[:len(data_electron)]
     # create training and testing data set
-    data = np.vstack((data_electron, data_other))
+    data = np.concatenate((data_electron, data_other))
     labels_electron = np.ones((len(data_electron), 1), dtype=int)
     labels_other = np.zeros((len(data_other), 1), dtype=int)
     labels = np.vstack((labels_electron, labels_other))
