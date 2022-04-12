@@ -39,7 +39,11 @@ def __main__():
     print(f"Number of entries: {len(data)}")
     data_electron = data[labels == 1]
     data_other = data[labels == 0]
-    print(f"Number of electrons ({len(data_electron)}) and other particles ({len(data_other)})")
+    print(f"Number of electrons ({len(data_electron)}) and other particles ({len(data_other)}) in data set")
+    # shuffle and select the same number of other particles as there are electrons
+    rng = np.random.default_rng()
+    rng.shuffle(data_other)
+    data_other = data_other[:len(data_electron)]
 
 
 if __name__ == "__main__":
