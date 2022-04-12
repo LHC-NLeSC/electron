@@ -5,12 +5,11 @@ import matplotlib.pyplot as plt
 import onnx
 import tf2onnx
 from os import environ
-from ROOT import TFile, RDataFrame
+
+from utilities import load_data, unpack_digit_indices, shuffle_data
 
 # reduce TensorFlow verbosity
 environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-# columns in the dataframe
-columns = None
 
 
 def command_line():
@@ -27,33 +26,9 @@ def command_line():
     return parser.parse_args()
 
 
-def load_data(filename : str):
-    global columns
-    kalman_file = TFile(filename)
-    dataframe = RDataFrame("kalman_validator/kalman_ip_tree", kalman_file)
-    columns = dataframe.GetColumnNames()
-    return dataframe.AsNumpy()
-
-
-def unpack_digit_indices(digit_indices):
-    unpacked_digit_indices = []
-    for index in range(6):
-        column = np.ndarray(len(digit_indices), dtype=int)
-        for column_index in range(len(digit_indices)):
-            column[column_index] = digit_indices[column_index][index]
-        unpacked_digit_indices.append(column)
-    return unpacked_digit_indices
-
-
-def shuffle_data(rng, data, labels):
-    assert(len(data) == len(labels))
-    permutation = rng.permutation(len(data))
-    return data[permutation], labels[permutation]
-
-
 def __main__():
     arguments = command_line()
-    dataframe = load_data(arguments.filename)
+    dataframe, columns = load_data(arguments.filename)
     print(f"Columns in the table: {len(dataframe)}")
     if "mcp_electron" not in columns:
         print("Missing labels.")
