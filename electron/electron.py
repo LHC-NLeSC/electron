@@ -27,9 +27,9 @@ def load_data(filename : str):
 def unpack_digit_indices(digit_indices):
     unpacked_digit_indices = []
     for index in range(6):
-        column = []
-        for item in digit_indices:
-            column.append(item[index])
+        column = np.ndarray(len(digit_indices), dtype=int)
+        for column_index in range(len(digit_indices)):
+            column[column_index] = digit_indices[column_index][index]
         unpacked_digit_indices.append(column)
     return unpacked_digit_indices
 
