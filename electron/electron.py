@@ -19,6 +19,7 @@ def command_line():
     parser.add_argument("--epochs", help="Number of epochs", type=int, default=512)
     parser.add_argument("--batch", help="Batch size", type=int, default=1024)
     # preprocessing
+    parser.add_argument("--filter", help="Filter out columns with a single value.", action="store_true")
     parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
     # data
     parser.add_argument("--plot", help="Plot accuracy over time", action="store_true")
@@ -37,8 +38,8 @@ def __main__():
     if "digit_indices" not in columns:
         print("Missing training data.")
         return
-    data = unpack_digit_indices(dataframe["digit_indices"])
-    print(f"Number of entries: {len(data[0])}")
+    data = unpack_digit_indices(dataframe["digit_indices"], filter=arguments.filter)
+    print(f"Shape of unpacked \"digit_indices\": {data.shape}")
     data = np.hstack([data[i].reshape(len(data[0]), 1) for i in range(len(data))])
     data_electron = data[labels == 1]
     data_other = data[labels == 0]
@@ -53,11 +54,12 @@ def __main__():
     labels_other = np.zeros((len(data_other), 1), dtype=int)
     labels = np.vstack((labels_electron, labels_other))
     data, labels = shuffle_data(rng, data, labels)
+    print(f"Shape of training/validation data: {data.shape}")
     test_point = int(len(data) * 0.8)
     print(f"Training set size: {test_point}")
     print(f"Test set size: {len(data) - test_point}")
     # model
-    num_features = 6
+    num_features = data.shape[1]
     if arguments.normalize:
         print("Normalization enabled")
         normalization_layer = tf.keras.layers.Normalization()
