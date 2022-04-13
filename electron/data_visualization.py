@@ -23,7 +23,8 @@ def __main__():
     if "digit_indices" not in columns:
         print("Missing data.")
         return
-    data = unpack_digit_indices(dataframe["digit_indices"], arguments.filter)
+    data = unpack_digit_indices(dataframe["digit_indices"], filter=arguments.filter)
+    print(f"Shape of unpacked digit_indices: {data.shape}")
     # plot all data
     for index in range(len(data)):
         plt.plot(data[index], "o", label=f"Column {index}")
@@ -32,7 +33,8 @@ def __main__():
     # plot only electrons
     data = dataframe["digit_indices"]
     data_electrons = data[labels == 1]
-    data_electrons = unpack_digit_indices(data_electrons, arguments.filter)
+    data_electrons = unpack_digit_indices(data_electrons, filter=arguments.filter)
+    print(f"Shape of unpacked electron digit_indices: {data_electrons.shape}")
     for index in range(len(data_electrons)):
         plt.plot(data_electrons[index], "o", label=f"Column {index}")
     plt.legend(loc="upper right")
