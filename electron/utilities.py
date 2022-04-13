@@ -9,13 +9,11 @@ def load_data(filename : str):
     return dataframe.AsNumpy(), dataframe.GetColumnNames()
 
 
-def unpack_digit_indices(digit_indices, filter:bool=False):
-    unpacked_digit_indices = []
-    for index in range(6):
-        column = np.ndarray(len(digit_indices), dtype=int)
+def unpack_digit_indices(digit_indices, columns:int=6, filter:bool=False):
+    unpacked_digit_indices = np.ndarray((columns, len(digit_indices)))
+    for index in range(columns):
         for column_index in range(len(digit_indices)):
-            column[column_index] = digit_indices[column_index][index]
-        unpacked_digit_indices.append(column)
+            unpacked_digit_indices[index][column_index] = digit_indices[column_index][index]
     if filter:
         to_filter = []
         for index in range(len(unpacked_digit_indices)):
