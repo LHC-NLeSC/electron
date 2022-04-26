@@ -23,9 +23,9 @@ def __main__():
     if "digit_indices" not in columns:
         print("Missing data.")
         return
+    # plot all data
     data = unpack_digit_indices(dataframe["digit_indices"], filter=arguments.filter)
     print(f"Shape of unpacked digit_indices: {data.shape}")
-    # plot all data
     for index in range(len(data)):
         plt.plot(data[index], "o", label=f"Column {index}")
     plt.legend(loc="upper right")
@@ -38,6 +38,38 @@ def __main__():
     for index in range(len(data_electrons)):
         plt.plot(data_electrons[index], "o", label=f"Column {index}")
     plt.legend(loc="upper right")
+    plt.show()
+    # plot E/p for all data
+    if "p" not in columns:
+        print("Missing data.")
+        return
+    e_p = []
+    data = unpack_digit_indices(dataframe["digit_indices"])
+    for index in range(data.shape[1]):
+        energy = 0.0
+        for column in range(data.shape[0]):
+            if data[column][index] != 9999:
+                energy = energy + data[column][index]
+        e_p.append(energy / dataframe["p"][index])
+    bins = np.histogram(e_p)[1]
+    plt.hist(e_p, bins=bins)
+    plt.show()
+    # plot E/p for electrons
+    if "p" not in columns:
+        print("Missing data.")
+        return
+    e_p = []
+    data = dataframe["digit_indices"]
+    data_electrons = data[labels == 1]
+    data_electrons = unpack_digit_indices(data_electrons)
+    for index in range(data_electrons.shape[1]):
+        energy = 0.0
+        for column in range(data_electrons.shape[0]):
+            if data_electrons[column][index] != 9999:
+                energy = energy + data_electrons[column][index]
+        e_p.append(energy / dataframe["p"][labels == 1][index])
+    bins = np.histogram(e_p)[1]
+    plt.hist(e_p, bins=bins)
     plt.show()
 
 
