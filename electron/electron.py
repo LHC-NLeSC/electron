@@ -6,10 +6,15 @@ import onnx
 import tf2onnx
 from os import environ
 
-from utilities import load_data, unpack_digit_indices, shuffle_data
+from utilities import load_data, unpack_digit_indices, shuffle_data, merge_columns
 
 # reduce TensorFlow verbosity
 environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+
+label = "mcp_electron"
+basic_training_column = "digit_indices"
+additional_training_columns = ["p"]
 
 
 def command_line():
@@ -31,15 +36,23 @@ def __main__():
     arguments = command_line()
     dataframe, columns = load_data(arguments.filename)
     print(f"Columns in the table: {len(dataframe)}")
-    if "mcp_electron" not in columns:
+    if label not in columns:
         print("Missing labels.")
         return
     labels = dataframe["mcp_electron"].astype(int)
-    if "digit_indices" not in columns:
+    if basic_training_column not in columns:
         print("Missing training data.")
         return
-    data = unpack_digit_indices(dataframe["digit_indices"], filter=arguments.filter)
+    for column in additional_training_columns:
+        if column not in columns:
+            print("Missing additional training data.")
+            return
+    # unpacking the digit_indices array
+    data = unpack_digit_indices(dataframe["digit_indices"])
     print(f"Shape of unpacked \"digit_indices\": {data.shape}")
+    for column in additional_training_columns:
+        data = merge_columns(data, dataframe[column])
+    print(f"Shape of unpacked data: {data.shape}")
     data = np.hstack([data[i].reshape(len(data[0]), 1) for i in range(len(data))])
     data_electron = data[labels == 1]
     data_other = data[labels == 0]
