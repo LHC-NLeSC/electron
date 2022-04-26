@@ -51,8 +51,11 @@ def __main__():
             if data[column][index] != 9999:
                 energy = energy + data[column][index]
         e_p.append(energy / dataframe["p"][index])
-    bins = np.histogram(e_p)[1]
-    plt.hist(e_p, bins=bins)
+    bins = [0.01 * i for i in range(0, 210)]
+    plt.hist(e_p, bins=bins, histtype="step")
+    plt.xticks([0.1 * i for i in range(0, 21)])
+    plt.xlabel("E/p")
+    plt.ylabel("Tracks")
     plt.show()
     # plot E/p for electrons
     if "p" not in columns:
@@ -68,8 +71,11 @@ def __main__():
             if data_electrons[column][index] != 9999:
                 energy = energy + data_electrons[column][index]
         e_p.append(energy / dataframe["p"][labels == 1][index])
-    bins = np.histogram(e_p)[1]
-    plt.hist(e_p, bins=bins)
+    bins = [0.01 * i for i in range(0, 210)]
+    plt.hist(e_p, bins=bins, histtype="step")
+    plt.xticks([0.1 * i for i in range(0, 21)])
+    plt.xlabel("E/p")
+    plt.ylabel("Tracks")
     plt.show()
 
 
