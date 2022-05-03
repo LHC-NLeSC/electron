@@ -14,7 +14,9 @@ environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 label = "mcp_electron"
 basic_training_column = "digit_indices"
-additional_training_columns = ["p"]
+additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qop", "ghost", "kalman_docaz",
+    "kalman_ip", "kalman_ip_chi2", "kalman_ipx", "kalman_ipy", "mcp_p", "ndof", "ndofT", "ndofV", "p",
+    "qop", "tx", "ty", "velo_docaz", "velo_ip", "velo_ip_chi2", "velo_ipx", "velo_ipy", "x", "y", "z"]
 
 
 def command_line():
