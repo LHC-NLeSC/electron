@@ -14,9 +14,8 @@ environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 label = "mcp_electron"
 basic_training_column = "digit_indices"
-additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qop", "ghost", "kalman_docaz",
-    "kalman_ip", "kalman_ip_chi2", "kalman_ipx", "kalman_ipy", "mcp_p", "ndof", "ndofT", "ndofV", "p",
-    "qop", "tx", "ty", "velo_docaz", "velo_ip", "velo_ip_chi2", "velo_ipx", "velo_ipy", "x", "y", "z"]
+additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qop", "ndof", "ndofT",
+    "ndofV", "p", "qop", "tx", "ty", "x", "y", "z"]
 
 
 def command_line():
@@ -52,6 +51,7 @@ def __main__():
     # unpacking the digit_indices array
     data = unpack_digit_indices(dataframe["digit_indices"])
     print(f"Shape of unpacked \"digit_indices\": {data.shape}")
+    data = np.ndarray((0, len(dataframe["digit_indices"])))
     for column in additional_training_columns:
         data = merge_columns(data, dataframe[column])
     print(f"Shape of unpacked data: {data.shape}")
