@@ -68,7 +68,6 @@ def __main__():
     labels_other = np.zeros((len(data_other), 1), dtype=int)
     labels = np.vstack((labels_electron, labels_other))
     data, labels = shuffle_data(rng, data, labels)
-    print(f"Shape of training/validation data: {data.shape}")
     test_point = int(len(data) * 0.8)
     print(f"Training set size: {test_point}")
     print(f"Test set size: {len(data) - test_point}")
