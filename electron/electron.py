@@ -6,16 +6,16 @@ import onnx
 import tf2onnx
 from os import environ
 
-from utilities import load_data, unpack_digit_indices, shuffle_data, merge_columns
+from utilities import load_data, shuffle_data
 
 # reduce TensorFlow verbosity
 environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
 label = "mcp_electron"
-basic_training_column = "digit_indices"
+basic_training_column = "calo_energy"
 additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qop", "ndof", "ndofT",
-    "ndofV", "p", "qop", "tx", "ty", "x", "y", "z"]
+    "ndofV", "p", "qop", "tx", "ty", "x", "y", "z", "ep"]
 
 
 def command_line():
@@ -40,7 +40,7 @@ def __main__():
     if label not in columns:
         print("Missing labels.")
         return
-    labels = dataframe["mcp_electron"].astype(int)
+    labels = dataframe[label].astype(int)
     if basic_training_column not in columns:
         print("Missing training data.")
         return
@@ -48,13 +48,12 @@ def __main__():
         if column not in columns:
             print("Missing additional training data.")
             return
-    # unpacking the digit_indices array
-    data = unpack_digit_indices(dataframe["digit_indices"])
-    print(f"Shape of unpacked \"digit_indices\": {data.shape}")
-    data = np.ndarray((0, len(dataframe["digit_indices"])))
-    for column in additional_training_columns:
-        data = merge_columns(data, dataframe[column])
-    print(f"Shape of unpacked data: {data.shape}")
+    trainining_columns = additional_training_columns
+    trainining_columns.append(basic_training_column)
+    print(f"Columns for training: {len(trainining_columns)}")
+    print(f"Entries in the table: {len(dataframe[basic_training_column])}")
+    data = [dataframe[column] for column in trainining_columns]
+    # split into electrons and other particles
     data = np.hstack([data[i].reshape(len(data[0]), 1) for i in range(len(data))])
     data_electron = data[labels == 1]
     data_other = data[labels == 0]
