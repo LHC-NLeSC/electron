@@ -9,7 +9,6 @@ from utilities import load_data
 def command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--filename", help="ROOT file containing the training data set", type=str, required=True)
-    parser.add_argument("--filter", help="Filter out columns with a single value.", action="store_true")
     return parser.parse_args()
 
 

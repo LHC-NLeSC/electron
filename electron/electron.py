@@ -25,7 +25,6 @@ def command_line():
     parser.add_argument("--epochs", help="Number of epochs", type=int, default=512)
     parser.add_argument("--batch", help="Batch size", type=int, default=1024)
     # preprocessing
-    parser.add_argument("--filter", help="Filter out columns with a single value.", action="store_true")
     parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
     # data
     parser.add_argument("--plot", help="Plot accuracy over time", action="store_true")
