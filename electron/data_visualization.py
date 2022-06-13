@@ -38,7 +38,6 @@ def __main__():
     data = dataframe["ep"]
     bins = [0.01 * i for i in range(0, 210)]
     plt.hist(data, bins=bins, histtype="step")
-    plt.xticks([0.1 * i for i in range(0, 21)])
     plt.xlabel("E/p")
     plt.ylabel("Tracks")
     plt.show()
@@ -47,7 +46,6 @@ def __main__():
     data_electrons = data[labels == 1]
     bins = [0.01 * i for i in range(0, 210)]
     plt.hist(data_electrons, bins=bins, histtype="step")
-    plt.xticks([0.1 * i for i in range(0, 21)])
     plt.xlabel("E/p")
     plt.ylabel("Tracks")
     plt.show()
