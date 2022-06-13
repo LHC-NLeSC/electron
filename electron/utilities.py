@@ -7,7 +7,7 @@ def load_data(filename : str):
     kalman_file = TFile(filename)
     dataframe = RDataFrame("kalman_validator/kalman_ip_tree", kalman_file)
     dataframe = dataframe.Define("p", "abs(1.f/best_qop)")
-    dataframe = dataframe.Define("ep", "abs(calo_energy/p)")
+    dataframe = dataframe.Define("ep", "calo_energy/p")
     return dataframe.AsNumpy(), dataframe.GetColumnNames()
 
 
