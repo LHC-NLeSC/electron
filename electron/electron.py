@@ -13,7 +13,7 @@ environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
 label = "mcp_electron"
-basic_training_column = "calo_energy"
+basic_training_column = "ecal_energy"
 additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qop", "ndof", "ndofT",
     "ndofV", "p", "qop", "tx", "ty", "x", "y", "z", "ep"]
 

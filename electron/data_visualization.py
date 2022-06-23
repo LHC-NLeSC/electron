@@ -19,11 +19,11 @@ def __main__():
         print("Missing labels.")
         return
     labels = dataframe["mcp_electron"].astype(int)
-    if "calo_energy" not in columns:
+    if "ecal_energy" not in columns:
         print("Missing data.")
         return
     # plot energy for all tracks
-    data = dataframe["calo_energy"]
+    data = dataframe["ecal_energy"]
     plt.plot(data, "o")
     plt.show()
     # plot energy for electrons
