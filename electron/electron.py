@@ -22,8 +22,8 @@ def command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--filename", help="ROOT file containing the training data set", type=str, required=True)
     # parameters
-    parser.add_argument("--epochs", help="Number of epochs", type=int, default=512)
-    parser.add_argument("--batch", help="Batch size", type=int, default=1024)
+    parser.add_argument("--epochs", help="Number of epochs", type=int, default=1024)
+    parser.add_argument("--batch", help="Batch size", type=int, default=512)
     # preprocessing
     parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
     # data
