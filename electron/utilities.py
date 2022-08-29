@@ -25,6 +25,7 @@ def threshold_method(data, labels, threshold=0.7):
         positive = False
         if data[index][6] > threshold:
             positive = True
+        
         if positive and labels[index][0] == 1:
             true_positives = true_positives + 1
         elif not positive and labels[index][0] == 0:
