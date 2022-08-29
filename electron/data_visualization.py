@@ -19,42 +19,44 @@ def __main__():
         print("Missing labels.")
         return
     labels = dataframe["mcp_electron"].astype(int)
-    if "ecal_energy" not in columns:
-        print("Missing data.")
-        return
-    # plot energy for all tracks
-    data = dataframe["ecal_energy"]
-    plt.plot(data, "o")
-    plt.show()
-    # plot energy for electrons
-    data_electrons = data[labels == 1]
-    plt.plot(data_electrons, "o")
-    plt.show()
-    # plot histogram of energy for all tracks
-    # bins = [100 * i for i in range(0, 210)]
-    plt.hist(data, bins=1000, histtype="step")
-    plt.xlabel("Energy")
-    plt.ylabel("Tracks")
-    plt.show()
-    # plot histogram of energy for electrons
-    plt.hist(data_electrons, bins=1000, histtype="step")
-    plt.xlabel("Energy")
-    plt.ylabel("Tracks")
-    plt.show()
-    # plot E/p for all tracks
+    # plot E/p distribution
     if "ep" not in columns:
         print("Missing data.")
         return
     data = dataframe["ep"]
-    plt.hist(data, bins=100, histtype="step")
-    plt.xlabel("E/p")
-    plt.ylabel("Tracks")
-    plt.show()
-    # # plot E/p for electrons
+    data_non_electrons = data[labels == 0]
     data_electrons = data[labels == 1]
-    plt.hist(data_electrons, bins=100, histtype="step")
+    plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
+    plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
     plt.xlabel("E/p")
-    plt.ylabel("Tracks")
+    plt.xlim(0, 2)
+    plt.legend()
+    plt.show()
+    # plot X^2 ip distribution
+    if "kalman_ip_chi2" not in columns:
+        print("Missing data.")
+        return
+    data = dataframe["kalman_ip_chi2"]
+    data_non_electrons = np.log(data[labels == 0])
+    data_electrons = np.log(data[labels == 1])
+    plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
+    plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
+    plt.xlabel("ln(X^2 ip)")
+    plt.xlim(-10, 12)
+    plt.legend()
+    plt.show()
+    # plot Pt distribution
+    if "best_pt" not in columns:
+        print("Missing data.")
+        return
+    data = dataframe["best_pt"]
+    data_non_electrons = np.log(data[labels == 0])
+    data_electrons = np.log(data[labels == 1])
+    plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
+    plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
+    plt.xlabel("ln(Pt)")
+    plt.xlim(5, 10)
+    plt.legend()
     plt.show()
 
 
