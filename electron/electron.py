@@ -36,6 +36,7 @@ def __main__():
     arguments = command_line()
     dataframe, columns = load_data(arguments.filename)
     print(f"Columns in the table: {len(dataframe)}")
+    print(columns)
     if label not in columns:
         print("Missing labels.")
         return
