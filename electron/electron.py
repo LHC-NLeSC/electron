@@ -6,7 +6,7 @@ import onnx
 import tf2onnx
 from os import environ
 
-from utilities import load_data, shuffle_data, threshold_method
+from utilities import load_data, shuffle_data
 
 # reduce TensorFlow verbosity
 environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -108,9 +108,6 @@ def __main__():
     # evaluation
     loss, accuracy = model.evaluate(data[test_point:], labels[test_point:], verbose=0)
     print(f"Loss: {loss}, Accuracy: {accuracy}")
-    # threshold method evaluation
-    threshold_accuracy = threshold_method(data[test_point:], labels[test_point:])
-    print(f"Threshold method accuracy: {threshold_accuracy}")
     # plotting
     if arguments.plot:
         epochs = np.arange(0, num_epochs)
