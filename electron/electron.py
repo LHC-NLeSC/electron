@@ -13,9 +13,9 @@ environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
 label = "mcp_electron"
-basic_training_column = "ecal_energy"
+basic_training_column = "eop"
 additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qop", "ndof", "ndofT",
-    "ndofV", "p", "qop", "tx", "ty", "x", "y", "z", "ep", "n_vertices", "n_tracks"]
+    "ndofV", "p", "qop", "tx", "ty", "x", "y", "z", "n_vertices", "n_tracks", "kalman_ip_chi2", "ecal_energy", "ecal_digit_0", "ecal_digit_1", "ecal_digit_2", "ecal_digit_3", "ecal_digit_4", "ecal_digit_5"]
 
 
 def command_line():

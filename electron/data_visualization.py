@@ -15,19 +15,22 @@ def command_line():
 def __main__():
     arguments = command_line()
     dataframe, columns = load_data(arguments.filename)
-    if "mcp_electron" not in columns:
+    if "mcp_electron" not in columns and "interesting_electron" not in columns:
         print("Missing labels.")
         return
-    labels = dataframe["mcp_electron"].astype(int)
+    labels_electron = dataframe["mcp_electron"].astype(int)
+    labels_interesting_electron = dataframe["interesting_electron"].astype(int)
     # plot E/p distribution
-    if "ep" not in columns:
+    if "eop" not in columns:
         print("Missing data.")
         return
-    data = dataframe["ep"]
-    data_non_electrons = data[labels == 0]
-    data_electrons = data[labels == 1]
+    data = dataframe["eop"]
+    data_non_electrons = data[labels_electron == 0]
+    data_electrons = data[labels_electron == 1]
+    data_interesting_electrons = data[labels_interesting_electron == 1]
     plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
     plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
+    plt.hist(data_interesting_electrons, bins=200, histtype="step", weights=np.ones_like(data_interesting_electrons) / len(data_interesting_electrons), label="True electrons - interesting")
     plt.xlabel("E/p")
     plt.xlim(0, 2)
     plt.legend()
@@ -37,10 +40,12 @@ def __main__():
         print("Missing data.")
         return
     data = dataframe["kalman_ip_chi2"]
-    data_non_electrons = np.log(data[labels == 0])
-    data_electrons = np.log(data[labels == 1])
+    data_non_electrons = np.log(data[labels_electron == 0])
+    data_electrons = np.log(data[labels_electron == 1])
+    data_interesting_electrons = np.log(data[labels_interesting_electron == 1])
     plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
     plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
+    plt.hist(data_interesting_electrons, bins=200, histtype="step", weights=np.ones_like(data_interesting_electrons) / len(data_interesting_electrons), label="True electrons - interesting")
     plt.xlabel("ln(X^2 ip)")
     plt.xlim(-10, 12)
     plt.legend()
@@ -50,10 +55,12 @@ def __main__():
         print("Missing data.")
         return
     data = dataframe["best_pt"]
-    data_non_electrons = np.log(data[labels == 0])
-    data_electrons = np.log(data[labels == 1])
+    data_non_electrons = np.log(data[labels_electron == 0])
+    data_electrons = np.log(data[labels_electron == 1])
+    data_interesting_electrons = np.log(data[labels_interesting_electron == 1])
     plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
     plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
+    plt.hist(data_interesting_electrons, bins=200, histtype="step", weights=np.ones_like(data_interesting_electrons) / len(data_interesting_electrons), label="True electrons - interesting")
     plt.xlabel("ln(Pt)")
     plt.xlim(5, 10)
     plt.legend()
