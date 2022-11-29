@@ -27,9 +27,11 @@ def __main__():
     data = dataframe["eop"]
     data_non_electrons = data[labels_electron == 0]
     data_electrons = data[labels_electron == 1]
+    data_boring_electrons = data[np.logical_and(labels_electron == 1, labels_interesting_electron == 0)]
     data_interesting_electrons = data[labels_interesting_electron == 1]
     plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
     plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
+    plt.hist(data_boring_electrons, bins=200, histtype="step", weights=np.ones_like(data_boring_electrons) / len(data_boring_electrons), label="True electrons - boring")
     plt.hist(data_interesting_electrons, bins=200, histtype="step", weights=np.ones_like(data_interesting_electrons) / len(data_interesting_electrons), label="True electrons - interesting")
     plt.xlabel("E/p")
     plt.xlim(0, 2)
@@ -42,9 +44,11 @@ def __main__():
     data = dataframe["kalman_ip_chi2"]
     data_non_electrons = np.log(data[labels_electron == 0])
     data_electrons = np.log(data[labels_electron == 1])
+    data_boring_electrons = np.log(data[np.logical_and(labels_electron == 1, labels_interesting_electron == 0)])
     data_interesting_electrons = np.log(data[labels_interesting_electron == 1])
     plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
     plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
+    plt.hist(data_boring_electrons, bins=200, histtype="step", weights=np.ones_like(data_boring_electrons) / len(data_boring_electrons), label="True electrons - boring")
     plt.hist(data_interesting_electrons, bins=200, histtype="step", weights=np.ones_like(data_interesting_electrons) / len(data_interesting_electrons), label="True electrons - interesting")
     plt.xlabel("ln(X^2 ip)")
     plt.xlim(-10, 12)
@@ -57,9 +61,11 @@ def __main__():
     data = dataframe["best_pt"]
     data_non_electrons = np.log(data[labels_electron == 0])
     data_electrons = np.log(data[labels_electron == 1])
+    data_boring_electrons = np.log(data[np.logical_and(labels_electron == 1, labels_interesting_electron == 0)])
     data_interesting_electrons = np.log(data[labels_interesting_electron == 1])
     plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
     plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
+    plt.hist(data_boring_electrons, bins=200, histtype="step", weights=np.ones_like(data_boring_electrons) / len(data_boring_electrons), label="True electrons - boring")
     plt.hist(data_interesting_electrons, bins=200, histtype="step", weights=np.ones_like(data_interesting_electrons) / len(data_interesting_electrons), label="True electrons - interesting")
     plt.xlabel("ln(Pt)")
     plt.xlim(5, 10)
