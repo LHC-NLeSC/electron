@@ -98,16 +98,14 @@ def __main__():
     # training
     num_epochs = arguments.epochs
     batch_size = arguments.batch
-    print("Training started.")
     training_history = model.fit(
         data[:test_point],
         labels[:test_point],
         validation_split=0.2,
         epochs=num_epochs,
         batch_size=batch_size,
-        verbose=0
+        verbose=1
         )
-    print("Training complete.")
     # evaluation
     loss, accuracy = model.evaluate(data[test_point:], labels[test_point:], verbose=0)
     print(f"Loss: {loss}, Accuracy: {accuracy}")
