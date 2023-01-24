@@ -71,6 +71,24 @@ def __main__():
     plt.xlim(5, 10)
     plt.legend()
     plt.show()
+    # plot ecal digits distribution
+    for digit in range(0, 6):
+        column = f"ecal_digit_{digit}"
+        if column not in columns:
+            print("Missing data.")
+            return
+        data = dataframe[column]
+        data_non_electrons = data[labels_electron == 0]
+        data_electrons = data[labels_electron == 1]
+        data_boring_electrons = data[np.logical_and(labels_electron == 1, labels_interesting_electron == 0)]
+        data_interesting_electrons = data[labels_interesting_electron == 1]
+        plt.hist(data_non_electrons, bins=200, histtype="step", weights=np.ones_like(data_non_electrons) / len(data_non_electrons), label="Not electrons")
+        plt.hist(data_electrons, bins=200, histtype="step", weights=np.ones_like(data_electrons) / len(data_electrons), label="True electrons")
+        plt.hist(data_boring_electrons, bins=200, histtype="step", weights=np.ones_like(data_boring_electrons) / len(data_boring_electrons), label="True electrons - boring")
+        plt.hist(data_interesting_electrons, bins=200, histtype="step", weights=np.ones_like(data_interesting_electrons) / len(data_interesting_electrons), label="True electrons - interesting")
+        plt.xlabel(f"Ecal Digit {digit}")
+        plt.legend()
+        plt.show()
 
 
 if __name__ == "__main__":
