@@ -85,7 +85,6 @@ def __main__():
     plt.hist(data_boring_electrons, bins=200, histtype="step", weights=np.ones_like(data_boring_electrons) / len(data_boring_electrons), label="True electrons - boring")
     plt.hist(data_interesting_electrons, bins=200, histtype="step", weights=np.ones_like(data_interesting_electrons) / len(data_interesting_electrons), label="True electrons - interesting")
     plt.xlabel("Ecal Energy")
-    #plt.xlim(0, 2)
     plt.legend()
     plt.show()
     # plot ecal digits distribution
