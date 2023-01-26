@@ -99,6 +99,8 @@ def __main__():
     # training
     num_epochs = arguments.epochs
     batch_size = arguments.batch
+    print(f"Number of epochs: {num_epochs}")
+    print(f"Batch size: {batch_size}")
     training_history = model.fit(
         data[:test_point],
         labels[:test_point],
