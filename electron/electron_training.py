@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import tensorflow as tf
+import tensorflow_model_optimization as tfmot
 import matplotlib.pyplot as plt
 import onnx
 import tf2onnx
@@ -28,6 +29,7 @@ def command_line():
     # preprocessing
     parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
     # data
+    parser.add_argument("--int8", help="Quantize the trained model to INT8", action="store_true")
     parser.add_argument("--plot", help="Plot accuracy over time", action="store_true")
     parser.add_argument("--save", help="Save the trained model to disk", action="store_true")
     return parser.parse_args()
@@ -129,6 +131,35 @@ def __main__():
         plt.ylabel("Accuracy")
         plt.legend(loc="lower right")
         plt.show()
+    # INT8 quantization
+    if arguments.int8:
+        quantize_model = tfmot.quantization.keras.quantize_model
+        qa_model = quantize_model(model)
+        qa_model.compile(
+            optimizer="adam",
+            loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+            metrics=["accuracy"]
+            )
+        print()
+        qa_model.summary()
+        print()
+        qa_model.fit(
+            data[:test_point],
+            labels[:test_point],
+            validation_split=0.2,
+            epochs=1,
+            batch_size=batch_size,
+            verbose=1
+            )
+        converter = tf.lite.TFLiteConverter.from_keras_model(qa_model)
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+        converter.inference_input_type = tf.int8
+        converter.inference_output_type = tf.int8
+        int8_model = converter.convert()
+        # evaluation INT8 model
+        loss, accuracy = qa_model.evaluate(data[test_point:], labels[test_point:], verbose=0)
+        print(f"Loss (INT8): {loss}, Accuracy (INT8): {accuracy}")
     # save model
     if arguments.save:
         print("Saving model to disk")
