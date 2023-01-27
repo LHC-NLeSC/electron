@@ -133,6 +133,7 @@ def __main__():
         plt.show()
     # INT8 quantization
     if arguments.int8:
+        print("INT8 quantization")
         quantize_model = tfmot.quantization.keras.quantize_model
         qa_model = quantize_model(model)
         qa_model.compile(
