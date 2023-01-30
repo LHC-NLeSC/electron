@@ -153,7 +153,7 @@ def __main__():
         onnx.save(model_onnx, "electron_model.onnx")
         if arguments.int8:
             print("Saving INT8 model to disk")
-            open("electron_in8_model.tflite", "wb").write(int8_model)
+            open("electron_int8_model.tflite", "wb").write(int8_model)
             print("Saving INT8 model to ONNX format")
             model_onnx, _ = tf2onnx.convert.from_tflite("electron_in8_model.tflite")
             onnx.save(model_onnx, "electron_int8_model.onnx")
