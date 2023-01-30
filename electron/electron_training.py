@@ -77,7 +77,7 @@ def __main__():
     num_features = data.shape[1]
     if arguments.normalize:
         print("Normalization enabled")
-        normalization_layer = tf.keras.layers.Normalization()
+        normalization_layer = tf.keras.layers.Normalization(input_dim=num_features, axis=None)
         normalization_layer.adapt(data[:test_point])
         model = tf.keras.Sequential([
             normalization_layer,
