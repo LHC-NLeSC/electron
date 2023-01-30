@@ -146,15 +146,17 @@ def __main__():
     # save model
     if arguments.save:
         print("Saving model to disk")
-        model.save("ghostprob_model.h5")
+        model.save("electron_model.h5")
         print("Saving model to ONNX format")
         input_signature = [tf.TensorSpec(input.shape, input.dtype) for input in model.inputs]
         model_onnx, _ = tf2onnx.convert.from_keras(model, input_signature)
-        onnx.save(model_onnx, "ghostprob_model.onnx")
+        onnx.save(model_onnx, "electron_model.onnx")
         if arguments.int8:
+            print("Saving INT8 model to disk")
+            open("electron_in8_model.tflite", "wb").write(int8_model)
             print("Saving INT8 model to ONNX format")
-            model_onnx, _ = tf2onnx.convert.from_tflite(int8_model)
-            onnx.save(model_onnx, "ghostprob_model.onnx")
+            model_onnx, _ = tf2onnx.convert.from_tflite("electron_in8_model.tflite")
+            onnx.save(model_onnx, "electron_int8_model.onnx")
 
 if __name__ == "__main__":
     __main__()
