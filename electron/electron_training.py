@@ -151,6 +151,10 @@ def __main__():
         input_signature = [tf.TensorSpec(input.shape, input.dtype) for input in model.inputs]
         model_onnx, _ = tf2onnx.convert.from_keras(model, input_signature)
         onnx.save(model_onnx, "ghostprob_model.onnx")
+        if arguments.int8:
+            print("Saving INT8 model to ONNX format")
+            model_onnx, _ = tf2onnx.convert.from_tflite(int8_model)
+            onnx.save(model_onnx, "ghostprob_model.onnx")
 
 if __name__ == "__main__":
     __main__()
