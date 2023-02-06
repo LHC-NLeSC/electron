@@ -72,7 +72,7 @@ def __main__():
         if predictions[i] == 0 and labels[i] == 0:
             tn = tn + 1
             continue
-        if predictions[i] == 0 and labels == 1:
+        if predictions[i] == 0 and labels[i] == 1:
             fn = fn + 1
             continue
     print(f"True positives: {tp}")
