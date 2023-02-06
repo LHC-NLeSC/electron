@@ -58,11 +58,27 @@ def __main__():
     # analysis
     predictions = np.transpose(predictions)[0]
     predictions = list(map(lambda x: 0 if x < arguments.threshold else 1, predictions))
-    matrix = tf.math.confusion_matrix(labels, predictions, num_classes=1)
-    print(f"True positives: {matrix[0][0]}")
-    print(f"False positives: {matrix[0][1]}")
-    print(f"True negatives: {matrix[1][0]}")
-    print(f"False negatives: {matrix[1][1]}")
+    tp = 0
+    fp = 0
+    tn = 0
+    fn = 0
+    for i in range(0, len(labels)):
+        if predictions[i] == 1 and labels[i] == 1:
+            tp = tp + 1
+            continue
+        if predictions[i] == 1 and labels[i] == 0:
+            fp = fp + 1
+            continue
+        if predictions[i] == 0 and labels[i] == 0:
+            tn = tn + 1
+            continue
+        if predictions[i] == 0 and labels == 1:
+            fn = fn + 1
+            continue
+    print(f"True positives: {tp}")
+    print(f"False positives: {fp}")
+    print(f"True negatives: {tn}")
+    print(f"False negatives: {fn}")
 
 if __name__ == "__main__":
     __main__()
