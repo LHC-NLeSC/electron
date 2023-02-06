@@ -77,7 +77,7 @@ def __main__():
     num_features = data.shape[1]
     if arguments.normalize:
         print("Normalization enabled")
-        normalization_layer = tf.keras.layers.Normalization(input_dim=num_features, axis=None)
+        normalization_layer = tf.keras.layers.Normalization(input_dim=num_features)
         normalization_layer.adapt(data[:test_point])
         model = tf.keras.Sequential([
             normalization_layer,
@@ -134,7 +134,7 @@ def __main__():
     if arguments.int8:
         print("INT8 quantization")
         def representative_data_gen():
-            for input_value in tf.data.Dataset.from_tensor_slices(data[test_point:].astype("float32")).batch(1).take(100):
+            for input_value in data[test_point:(test_point + 100)].astype("float32"):
                 yield [input_value]
         converter = tf.lite.TFLiteConverter.from_keras_model(model)
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
