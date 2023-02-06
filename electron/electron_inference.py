@@ -79,6 +79,7 @@ def __main__():
     print(f"False positives: {fp}")
     print(f"True negatives: {tn}")
     print(f"False negatives: {fn}")
+    print(f"Accuracy: {(((tp + tn) * 100) / len(labels)):.2f}%")
 
 if __name__ == "__main__":
     __main__()
