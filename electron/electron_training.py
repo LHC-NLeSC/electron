@@ -134,7 +134,7 @@ def __main__():
     if arguments.int8:
         print("INT8 quantization")
         def representative_data_gen():
-            for input_value in tf.data.Dataset.from_tensor_slices(data[test_point:]).batch(1).take(100):
+            for input_value in tf.data.Dataset.from_tensor_slices(data[test_point:].astype("float32")).batch(1).take(100):
                 yield [input_value]
         converter = tf.lite.TFLiteConverter.from_keras_model(model)
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
