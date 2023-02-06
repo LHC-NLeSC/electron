@@ -18,6 +18,7 @@ def command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--filename", help="ROOT file containing the data set", type=str, required=True)
     parser.add_argument("--model", help="Name of the file containing the model.", type=str, required=True)
+    parser.add_argument("--threshold", help="Threshold for electron probability", type=float, default=0)
     return parser.parse_args()
 
 
@@ -53,7 +54,15 @@ def __main__():
     model = tf.keras.models.load_model(arguments.model)
     model.summary()
     # inference
-    model.predict(data)
+    predictions = model.predict(data)
+    # analysis
+    predictions = np.transpose(predictions)[0]
+    predictions = list(map(lambda x: 0 if x < arguments.threshold else 1, predictions))
+    matrix = tf.math.confusion_matrix(labels, predictions, num_classes=1)
+    print(f"True positives: {matrix[0][0]}")
+    print(f"False positives: {matrix[0][1]}")
+    print(f"True negatives: {matrix[1][0]}")
+    print(f"False negatives: {matrix[1][1]}")
 
 if __name__ == "__main__":
     __main__()
