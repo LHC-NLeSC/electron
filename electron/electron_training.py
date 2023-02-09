@@ -1,15 +1,13 @@
 import argparse
+import copy
 import numpy as np
-import tensorflow as tf
 import matplotlib.pyplot as plt
-import onnx
-import tf2onnx
-from os import environ
+from sklearn.model_selection import train_test_split
+import torch
+from torch.utils.data import Dataset, DataLoader
+from torch import nn
 
-from utilities import load_data, shuffle_data
-
-# reduce TensorFlow verbosity
-environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+from utilities import load_data
 
 
 label = "mcp_electron"
@@ -19,12 +17,84 @@ additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qo
     "ecal_digit_0", "ecal_digit_1", "ecal_digit_2", "ecal_digit_3", "ecal_digit_4", "ecal_digit_5"]
 
 
+class ElectronDataset(Dataset):
+    def __init__(self, data, labels):
+        self.data = data
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        return self.data[index], self.labels[index]
+
+
+class ElectronNetwork(nn.Module):
+    def __init__(self, num_features):
+        super(ElectronNetwork, self).__init__()
+        self.quant = torch.quantization.QuantStub()
+        self.layer0 = nn.Linear(num_features, int((num_features + 1) / 2))
+        self.relu = nn.ReLU()
+        self.output = nn.Linear(int((num_features + 1) / 2), 1)
+        self.sigmoid = nn.Sigmoid()
+        self.dequant = torch.quantization.DeQuantStub()
+
+    def forward(self, x):
+        x = self.quant(x)
+        x = self.layer0(x)
+        x = self.relu(x)
+        x = self.output(x)
+        x = self.sigmoid(x)
+        x = self.dequant(x)
+        return x
+
+class ElectronNetworkNormalized(nn.Module):
+    def __init__(self, num_features):
+        super(ElectronNetworkNormalized, self).__init__()
+        self.quant = torch.quantization.QuantStub()
+        self.layer0 = nn.BatchNorm1d(num_features)
+        self.layer1 = nn.Linear(num_features, int((num_features + 1) / 2))
+        self.relu = nn.ReLU()
+        self.output = nn.Linear(int((num_features + 1) / 2), 1)
+        self.sigmoid = nn.Sigmoid()
+        self.dequant = torch.quantization.DeQuantStub()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.quant(x)
+        x = self.layer0(x)
+        x = self.layer1(x)
+        x = self.relu(x)
+        x = self.output(x)
+        x = self.sigmoid(x)
+        x = self.dequant(x)
+        return x
+
+def training_loop(model, dataloader, loss_function, optimizer):
+    model.train()
+    for x, y in dataloader:
+        prediction = model(x)
+        loss = loss_function(prediction, y)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+def testing_loop(model, dataloader):
+    model.eval()
+    accuracy = 0.0
+    for x, y in dataloader:
+        prediction = model(x)
+        accuracy = accuracy + (prediction.round() == y).float().mean()
+    accuracy = accuracy / len(dataloader)
+    return accuracy
+
 def command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--filename", help="ROOT file containing the training data set", type=str, required=True)
     # parameters
     parser.add_argument("--epochs", help="Number of epochs", type=int, default=1024)
     parser.add_argument("--batch", help="Batch size", type=int, default=512)
+    parser.add_argument("--learning", help="Learning rate", type=float, default=1e-3)
     # preprocessing
     parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
     # data
@@ -60,103 +130,92 @@ def __main__():
     data_electron = data[labels == 1]
     data_other = data[labels == 0]
     print(f"Number of electrons ({len(data_electron)}) and other particles ({len(data_other)}) in data set")
-    # shuffle and select the same number of other particles as there are electrons
+    # select the same number of other particles as there are electrons
     rng = np.random.default_rng()
     rng.shuffle(data_other)
     data_other = data_other[:len(data_electron)]
-    # create training and testing data set
     data = np.vstack((data_electron, data_other))
     labels_electron = np.ones((len(data_electron), 1), dtype=int)
     labels_other = np.zeros((len(data_other), 1), dtype=int)
     labels = np.vstack((labels_electron, labels_other))
-    data, labels = shuffle_data(rng, data, labels)
-    test_point = int(len(data) * 0.8)
-    print(f"Training set size: {test_point}")
-    print(f"Test set size: {len(data) - test_point}")
+    # create training and testing data set
+    data_train, data_test, labels_train, labels_test = train_test_split(data, labels, test_size=0.3)
+    print(f"Training set size: {len(data_train)}")
+    print(f"Test set size: {len(data_test)}")
+    training_data = ElectronDataset(torch.FloatTensor(data_train), torch.FloatTensor(labels_train))
+    test_data = ElectronDataset(torch.FloatTensor(data_test), torch.FloatTensor(labels_test))
+    training_dataloader = DataLoader(training_data, batch_size=arguments.batch, shuffle=True)
+    test_dataloader = DataLoader(test_data, batch_size=arguments.batch, shuffle=True)
     # model
-    num_features = data.shape[1]
+    num_features = data_train.shape[1]
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     if arguments.normalize:
-        print("Normalization enabled")
-        normalization_layer = tf.keras.layers.Normalization(input_dim=num_features)
-        normalization_layer.adapt(data[:test_point])
-        model = tf.keras.Sequential([
-            normalization_layer,
-            tf.keras.layers.Dense(units=((num_features + 1) / 2), activation="relu"),
-            tf.keras.layers.Dense(units=1)
-            ])
+        model = ElectronNetworkNormalized(num_features=num_features)
     else:
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(units=((num_features + 1) / 2), input_dim=num_features, activation="relu"),
-            tf.keras.layers.Dense(units=1)
-            ])
+        model = ElectronNetwork(num_features=num_features)
+    print(f"Device: {device}")
+    model.to(device)
     print()
-    model.summary()
+    print(model)
+    print(f"Model parameters: {sum([x.reshape(-1).shape[0] for x in model.parameters()])}")
     print()
-    model.compile(
-        optimizer="adam",
-        loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-        metrics=["accuracy"]
-        )
-    # training
+    # training and testing
     num_epochs = arguments.epochs
     batch_size = arguments.batch
     print(f"Number of epochs: {num_epochs}")
     print(f"Batch size: {batch_size}")
-    training_history = model.fit(
-        data[:test_point],
-        labels[:test_point],
-        validation_split=0.2,
-        epochs=num_epochs,
-        batch_size=batch_size,
-        verbose=1
-        )
-    # evaluation
-    loss, accuracy = model.evaluate(data[test_point:], labels[test_point:], verbose=0)
-    print(f"Loss: {loss}, Accuracy: {accuracy}")
+    loss_function = nn.BCELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=arguments.learning)
+    best_accuracy = -np.inf
+    accuracy_history = list()
+    best_weights = None
+    for epoch in range(0, num_epochs):
+        print(f"Epoch {epoch + 1}/{num_epochs}")
+        training_loop(model, training_dataloader, loss_function, optimizer)
+        accuracy = testing_loop(model, test_dataloader)
+        accuracy_history.append(accuracy * 100.0)
+        print(f"\tAccuracy: {accuracy * 100.0:.2f}%")
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            best_weights = copy.deepcopy(model.state_dict())
+    model.load_state_dict(best_weights)
+    print(f"Best Accuracy: {best_accuracy * 100.0:.2f}%")
     # plotting
     if arguments.plot:
         epochs = np.arange(0, num_epochs)
-        plt.plot(epochs, training_history.history["loss"], "bo", label="Training loss")
-        plt.plot(epochs, training_history.history["val_loss"], "ro", label="Validation loss")
-        plt.title("Loss")
-        plt.xlabel("Epochs")
-        plt.ylabel("Loss")
-        plt.legend(loc="upper right")
-        plt.show()
-        plt.plot(epochs, training_history.history["accuracy"], "b", label="Training accuracy")
-        plt.plot(epochs, training_history.history["val_accuracy"], "r", label="Validation accuracy")
-        plt.title("Accuracy")
+        plt.plot(epochs, accuracy_history, "r", label="Validation accuracy")
         plt.xlabel("Epochs")
         plt.ylabel("Accuracy")
         plt.legend(loc="lower right")
         plt.show()
-    # INT8 quantization
-    if arguments.int8:
-        print("INT8 quantization")
-        def representative_data_gen():
-            for input_value in data[test_point:(test_point + 100)].astype("float32"):
-                yield [input_value]
-        converter = tf.lite.TFLiteConverter.from_keras_model(model)
-        converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        converter.representative_dataset = representative_data_gen
-        converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
-        converter.inference_input_type = tf.int8
-        converter.inference_output_type = tf.int8
-        int8_model = converter.convert()
     # save model
     if arguments.save:
         print("Saving model to disk")
-        model.save("electron_model.h5")
+        torch.save(model, "electron_model.pth")
         print("Saving model to ONNX format")
-        input_signature = [tf.TensorSpec(input.shape, input.dtype) for input in model.inputs]
-        model_onnx, _ = tf2onnx.convert.from_keras(model, input_signature)
-        onnx.save(model_onnx, "electron_model.onnx")
-        if arguments.int8:
+        dummy_input = torch.randn(1, 26)
+        torch.onnx.export(model, dummy_input, "electron_model.onnx", export_params=True)
+    # INT8 quantization
+    if arguments.int8:
+        print("INT8 quantization")
+        model.qconfig = torch.quantization.get_default_qat_qconfig("fbgemm")
+        if arguments.normalize:
+            model_fused = torch.quantization.fuse_modules(model, [["layer1", "relu"]])
+        else:
+            model_fused = torch.quantization.fuse_modules(model, [["layer0", "relu"]])
+        model_prepared = torch.quantization.prepare_qat(model_fused.train())
+        for epoch in range(0, num_epochs):
+            training_loop(model_prepared, training_dataloader, loss_function, optimizer)
+        model_prepared.eval()
+        model_int8 = torch.quantization.convert(model_prepared)
+        print(model_int8)
+        # save model
+        if arguments.save:
             print("Saving INT8 model to disk")
-            open("electron_int8_model.tflite", "wb").write(int8_model)
+            torch.save(model_int8, "electron_model_int8.pth")
             print("Saving INT8 model to ONNX format")
-            model_onnx, _ = tf2onnx.convert.from_tflite("electron_int8_model.tflite")
-            onnx.save(model_onnx, "electron_int8_model.onnx")
+            dummy_input = torch.randn(1, 26)
+            torch.onnx.export(model_int8, dummy_input, "electron_model_int8.onnx", export_params=True)
 
 if __name__ == "__main__":
     __main__()
