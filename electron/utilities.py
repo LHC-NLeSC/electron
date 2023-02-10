@@ -1,6 +1,18 @@
 import numpy as np
 from ROOT import TFile, RDataFrame
+from torch.utils.data import Dataset
 
+
+class ElectronDataset(Dataset):
+    def __init__(self, data, labels):
+        self.data = data
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        return self.data[index], self.labels[index]
 
 def load_data(filename : str):
     kalman_file = TFile(filename)
@@ -34,3 +46,13 @@ def threshold_method(data, labels, threshold=0.7):
         elif not positive and labels[index][0] == 1:
             false_negatives = false_negatives + 1
     return (true_positives + true_negatives) / (true_positives + true_negatives + false_positives + false_negatives)
+
+
+def testing_loop(model, dataloader):
+    model.eval()
+    accuracy = 0.0
+    for x, y in dataloader:
+        prediction = model(x)
+        accuracy = accuracy + (prediction.round() == y).float().mean()
+    accuracy = accuracy / len(dataloader)
+    return accuracy

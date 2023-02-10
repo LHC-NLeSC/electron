@@ -1,12 +1,11 @@
 import argparse
 import numpy as np
-import tensorflow as tf
-from os import environ
+import torch
+from torch.utils.data import DataLoader
 
-from utilities import load_data, shuffle_data
+from utilities import load_data, shuffle_data, ElectronDataset, testing_loop
+from networks import ElectronNetwork, ElectronNetworkNormalized
 
-# reduce TensorFlow verbosity
-environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 label = "mcp_electron"
 model_columns = ["eop", "best_pt", "best_qop", "chi2", "chi2V", "first_qop", "ndof", "ndofT",
@@ -18,11 +17,12 @@ def command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--filename", help="ROOT file containing the data set", type=str, required=True)
     parser.add_argument("--model", help="Name of the file containing the model.", type=str, required=True)
-    parser.add_argument("--threshold", help="Threshold for electron probability", type=float, default=0)
+    parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
     return parser.parse_args()
 
 
 def __main__():
+    device = "cpu"
     arguments = command_line()
     dataframe, columns = load_data(arguments.filename)
     if label not in columns:
@@ -40,7 +40,7 @@ def __main__():
     data_electron = data[labels == 1]
     data_other = data[labels == 0]
     print(f"Number of electrons ({len(data_electron)}) and other particles ({len(data_other)}) in data set")
-    # shuffle and select the same number of other particles as there are electrons
+    # select the same number of other particles as there are electrons
     rng = np.random.default_rng()
     rng.shuffle(data_other)
     data_other = data_other[:len(data_electron)]
@@ -50,36 +50,24 @@ def __main__():
     labels_other = np.zeros((len(data_other), 1), dtype=int)
     labels = np.vstack((labels_electron, labels_other))
     data, labels = shuffle_data(rng, data, labels)
+    evaluation_data = ElectronDataset(torch.FloatTensor(data), torch.FloatTensor(labels))
+    evaluation_dataloader = DataLoader(evaluation_data, shuffle=True)
     # read model
-    model = tf.keras.models.load_model(arguments.model)
-    model.summary()
+    num_features = data.shape[1]
+    if arguments.normalize:
+        model = ElectronNetworkNormalized(num_features=num_features)
+    else:
+        model = ElectronNetwork(num_features=num_features)
+    model.load_state_dict(torch.load(arguments.model, weights_only=True))
+    print(f"Device: {device}")
+    model.to(device)
+    print()
+    print(model)
+    print()
     # inference
-    predictions = model.predict(data)
-    # analysis
-    predictions = np.transpose(predictions)[0]
-    predictions = list(map(lambda x: 0 if x < arguments.threshold else 1, predictions))
-    tp = 0
-    fp = 0
-    tn = 0
-    fn = 0
-    for i in range(0, len(labels)):
-        if predictions[i] == 1 and labels[i] == 1:
-            tp = tp + 1
-            continue
-        if predictions[i] == 1 and labels[i] == 0:
-            fp = fp + 1
-            continue
-        if predictions[i] == 0 and labels[i] == 0:
-            tn = tn + 1
-            continue
-        if predictions[i] == 0 and labels[i] == 1:
-            fn = fn + 1
-            continue
-    print(f"True positives: {tp}")
-    print(f"False positives: {fp}")
-    print(f"True negatives: {tn}")
-    print(f"False negatives: {fn}")
-    print(f"Accuracy: {(((tp + tn) * 100) / len(labels)):.2f}%")
+    model.eval()
+    accuracy = testing_loop(model, evaluation_dataloader)
+    print(f"Accuracy: {accuracy * 100.0:.2f}%")
 
 if __name__ == "__main__":
     __main__()

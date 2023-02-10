@@ -4,10 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from torch import nn
 
-from utilities import load_data
+from utilities import load_data, ElectronDataset, testing_loop
+from networks import ElectronNetwork, ElectronNetworkNormalized
 
 
 label = "mcp_electron"
@@ -16,59 +17,6 @@ additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qo
     "ndofV", "p", "qop", "tx", "ty", "x", "y", "z", "n_vertices", "n_tracks", "kalman_ip_chi2", "ecal_energy", 
     "ecal_digit_0", "ecal_digit_1", "ecal_digit_2", "ecal_digit_3", "ecal_digit_4", "ecal_digit_5"]
 
-
-class ElectronDataset(Dataset):
-    def __init__(self, data, labels):
-        self.data = data
-        self.labels = labels
-
-    def __len__(self):
-        return len(self.data)
-    
-    def __getitem__(self, index):
-        return self.data[index], self.labels[index]
-
-
-class ElectronNetwork(nn.Module):
-    def __init__(self, num_features):
-        super(ElectronNetwork, self).__init__()
-        self.quant = torch.quantization.QuantStub()
-        self.layer0 = nn.Linear(num_features, int((num_features + 1) / 2))
-        self.relu = nn.ReLU()
-        self.output = nn.Linear(int((num_features + 1) / 2), 1)
-        self.sigmoid = nn.Sigmoid()
-        self.dequant = torch.quantization.DeQuantStub()
-
-    def forward(self, x):
-        x = self.quant(x)
-        x = self.layer0(x)
-        x = self.relu(x)
-        x = self.output(x)
-        x = self.sigmoid(x)
-        x = self.dequant(x)
-        return x
-
-class ElectronNetworkNormalized(nn.Module):
-    def __init__(self, num_features):
-        super(ElectronNetworkNormalized, self).__init__()
-        self.quant = torch.quantization.QuantStub()
-        self.layer0 = nn.BatchNorm1d(num_features)
-        self.layer1 = nn.Linear(num_features, int((num_features + 1) / 2))
-        self.relu = nn.ReLU()
-        self.output = nn.Linear(int((num_features + 1) / 2), 1)
-        self.sigmoid = nn.Sigmoid()
-        self.dequant = torch.quantization.DeQuantStub()
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        x = self.quant(x)
-        x = self.layer0(x)
-        x = self.layer1(x)
-        x = self.relu(x)
-        x = self.output(x)
-        x = self.sigmoid(x)
-        x = self.dequant(x)
-        return x
 
 def training_loop(model, dataloader, loss_function, optimizer):
     model.train()
@@ -79,14 +27,6 @@ def training_loop(model, dataloader, loss_function, optimizer):
         loss.backward()
         optimizer.step()
 
-def testing_loop(model, dataloader):
-    model.eval()
-    accuracy = 0.0
-    for x, y in dataloader:
-        prediction = model(x)
-        accuracy = accuracy + (prediction.round() == y).float().mean()
-    accuracy = accuracy / len(dataloader)
-    return accuracy
 
 def command_line():
     parser = argparse.ArgumentParser()
@@ -105,6 +45,7 @@ def command_line():
 
 
 def __main__():
+    device = "cpu"
     arguments = command_line()
     dataframe, columns = load_data(arguments.filename)
     print(f"Columns in the table: {len(dataframe)}")
@@ -148,7 +89,6 @@ def __main__():
     test_dataloader = DataLoader(test_data, batch_size=arguments.batch, shuffle=True)
     # model
     num_features = data_train.shape[1]
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     if arguments.normalize:
         model = ElectronNetworkNormalized(num_features=num_features)
     else:
@@ -191,7 +131,7 @@ def __main__():
     # save model
     if arguments.save:
         print("Saving model to disk")
-        torch.save(model, "electron_model.pth")
+        torch.save(model.state_dict(), "electron_model.pth")
         print("Saving model to ONNX format")
         dummy_input = torch.randn(1, 26)
         torch.onnx.export(model, dummy_input, "electron_model.onnx", export_params=True)
@@ -208,11 +148,13 @@ def __main__():
             training_loop(model_prepared, training_dataloader, loss_function, optimizer)
         model_prepared.eval()
         model_int8 = torch.quantization.convert(model_prepared)
+        print()
         print(model_int8)
+        print()
         # save model
         if arguments.save:
             print("Saving INT8 model to disk")
-            torch.save(model_int8, "electron_model_int8.pth")
+            torch.save(model_int8.state_dict(), "electron_model_int8.pth")
             print("Saving INT8 model to ONNX format")
             dummy_input = torch.randn(1, 26)
             torch.onnx.export(model_int8, dummy_input, "electron_model_int8.onnx", export_params=True)
