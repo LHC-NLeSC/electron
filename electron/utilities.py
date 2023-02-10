@@ -48,6 +48,16 @@ def threshold_method(data, labels, threshold=0.7):
     return (true_positives + true_negatives) / (true_positives + true_negatives + false_positives + false_negatives)
 
 
+def training_loop(model, dataloader, loss_function, optimizer):
+    model.train()
+    for x, y in dataloader:
+        prediction = model(x)
+        loss = loss_function(prediction, y)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+
 def testing_loop(model, dataloader):
     model.eval()
     accuracy = 0.0

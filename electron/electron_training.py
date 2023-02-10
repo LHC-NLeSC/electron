@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch import nn
 
-from utilities import load_data, ElectronDataset, testing_loop
+from utilities import load_data, ElectronDataset, training_loop, testing_loop
 from networks import ElectronNetwork, ElectronNetworkNormalized
 
 
@@ -16,16 +16,6 @@ basic_training_column = "eop"
 additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qop", "ndof", "ndofT",
     "ndofV", "p", "qop", "tx", "ty", "x", "y", "z", "n_vertices", "n_tracks", "kalman_ip_chi2", "ecal_energy", 
     "ecal_digit_0", "ecal_digit_1", "ecal_digit_2", "ecal_digit_3", "ecal_digit_4", "ecal_digit_5"]
-
-
-def training_loop(model, dataloader, loss_function, optimizer):
-    model.train()
-    for x, y in dataloader:
-        prediction = model(x)
-        loss = loss_function(prediction, y)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
 
 
 def command_line():

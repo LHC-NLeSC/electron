@@ -31,7 +31,6 @@ class ElectronNetworkNormalized(nn.Module):
         self.output = nn.Linear(int((num_features + 1) / 2), 1)
         self.sigmoid = nn.Sigmoid()
         self.dequant = torch.quantization.DeQuantStub()
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         x = self.quant(x)
