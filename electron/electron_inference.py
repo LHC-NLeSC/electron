@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+import onnx2torch
 
 from utilities import load_data, shuffle_data, ElectronDataset, testing_loop
 from networks import ElectronNetwork, ElectronNetworkNormalized
@@ -54,11 +55,15 @@ def __main__():
     evaluation_dataloader = DataLoader(evaluation_data, shuffle=True)
     # read model
     num_features = data.shape[1]
-    if arguments.normalize:
-        model = ElectronNetworkNormalized(num_features=num_features)
+    if "onnx" in arguments.model:
+        model = onnx2torch.convert(arguments.model)
     else:
-        model = ElectronNetwork(num_features=num_features)
-    model.load_state_dict(torch.load(arguments.model, weights_only=True))
+        if arguments.normalize:
+            model = ElectronNetworkNormalized(num_features=num_features)
+        else:
+            model = ElectronNetwork(num_features=num_features)
+        weights = torch.load(arguments.model)
+        model.load_state_dict(weights)
     print(f"Device: {device}")
     model.to(device)
     print()
