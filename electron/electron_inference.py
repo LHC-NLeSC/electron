@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import torch
+from torch import nn
 from torch.utils.data import DataLoader
 import onnx2torch
 
@@ -16,7 +17,7 @@ model_columns = ["eop", "best_pt", "best_qop", "chi2", "chi2V", "first_qop", "nd
 
 def command_line():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--filename", help="ROOT file containing the data set", type=str, required=True)
+    parser.add_argument("-f", "--filename", help="File containing the data set", type=str, required=True)
     parser.add_argument("--model", help="Name of the file containing the model.", type=str, required=True)
     parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
     return parser.parse_args()
@@ -25,36 +26,41 @@ def command_line():
 def __main__():
     device = "cpu"
     arguments = command_line()
-    dataframe, columns = load_data(arguments.filename)
-    print(f"Columns in the table: {len(dataframe)}")
-    print(columns)
-    if label not in columns:
-        print("Missing labels.")
-        return
-    labels = dataframe[label].astype(int)
-    for column in model_columns:
-        if column not in columns:
-            print("Missing data.")
+    if ".root" in arguments.filename:
+        dataframe, columns = load_data(arguments.filename)
+        print(f"Columns in the table: {len(dataframe)}")
+        print(columns)
+        if label not in columns:
+            print("Missing labels.")
             return
-    # create dataset
-    data = [dataframe[column] for column in model_columns]
-    # split into electrons and other particles
-    data = np.hstack([data[i].reshape(len(data[0]), 1) for i in range(len(data))])
-    data_electron = data[labels == 1]
-    data_other = data[labels == 0]
-    print(f"Number of electrons ({len(data_electron)}) and other particles ({len(data_other)}) in data set")
-    # select the same number of other particles as there are electrons
-    rng = np.random.default_rng()
-    rng.shuffle(data_other)
-    data_other = data_other[:len(data_electron)]
-    # create training and testing data set
-    data = np.vstack((data_electron, data_other))
-    labels_electron = np.ones((len(data_electron), 1), dtype=int)
-    labels_other = np.zeros((len(data_other), 1), dtype=int)
-    labels = np.vstack((labels_electron, labels_other))
-    data, labels = shuffle_data(rng, data, labels)
-    evaluation_data = ElectronDataset(torch.FloatTensor(data), torch.FloatTensor(labels))
-    evaluation_dataloader = DataLoader(evaluation_data, shuffle=True)
+        labels = dataframe[label].astype(int)
+        for column in model_columns:
+            if column not in columns:
+                print("Missing data.")
+                return
+        # create dataset
+        data = [dataframe[column] for column in model_columns]
+        # split into electrons and other particles
+        data = np.hstack([data[i].reshape(len(data[0]), 1) for i in range(len(data))])
+        data_electron = data[labels == 1]
+        data_other = data[labels == 0]
+        print(f"Number of electrons ({len(data_electron)}) and other particles ({len(data_other)}) in data set")
+        # select the same number of other particles as there are electrons
+        rng = np.random.default_rng()
+        rng.shuffle(data_other)
+        data_other = data_other[:len(data_electron)]
+        # create training and testing data set
+        data = np.vstack((data_electron, data_other))
+        labels_electron = np.ones((len(data_electron), 1), dtype=int)
+        labels_other = np.zeros((len(data_other), 1), dtype=int)
+        labels = np.vstack((labels_electron, labels_other))
+        data, labels = shuffle_data(rng, data, labels)
+    else:
+        data = np.load(f"{arguments.filename}_test_data.npy")
+        labels = np.load(f"{arguments.filename}_test_labels.npy")
+        print(f"Test set size: {len(data)}")
+    test_dataset = ElectronDataset(torch.FloatTensor(data), torch.FloatTensor(labels))
+    test_dataloader = DataLoader(test_dataset, batch_size=1024, shuffle=True)
     # read model
     num_features = data.shape[1]
     if "onnx" in arguments.model:
@@ -64,17 +70,20 @@ def __main__():
             model = ElectronNetworkNormalized(num_features=num_features)
         else:
             model = ElectronNetwork(num_features=num_features)
+        model.eval()
         weights = torch.load(arguments.model)
         model.load_state_dict(weights)
+        model.eval()
     print(f"Device: {device}")
     model.to(device)
     print()
     print(model)
     print()
     # inference
-    model.eval()
-    accuracy = testing_loop(model, evaluation_dataloader)
+    loss_function = nn.BCELoss()
+    accuracy, loss = testing_loop(model, test_dataloader, loss_function)
     print(f"Accuracy: {accuracy * 100.0:.2f}%")
+    print(f"Loss: {loss}")
 
 if __name__ == "__main__":
     __main__()
