@@ -19,6 +19,7 @@ def command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--filename", help="File containing the data set", type=str, required=True)
     parser.add_argument("--model", help="Name of the file containing the model.", type=str, required=True)
+    parser.add_argument("--batch", help="Batch size", type=int, default=512)
     parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
     return parser.parse_args()
 
@@ -60,7 +61,7 @@ def __main__():
         labels = np.load(f"{arguments.filename}_test_labels.npy")
         print(f"Test set size: {len(data)}")
     test_dataset = ElectronDataset(torch.FloatTensor(data), torch.FloatTensor(labels))
-    test_dataloader = DataLoader(test_dataset, batch_size=1024, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=arguments.batch, shuffle=True)
     # read model
     num_features = data.shape[1]
     if "onnx" in arguments.model:
