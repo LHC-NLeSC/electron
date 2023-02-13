@@ -1,5 +1,6 @@
 import numpy as np
 from ROOT import TFile, RDataFrame
+import torch
 from torch.utils.data import Dataset
 
 
@@ -58,11 +59,16 @@ def training_loop(model, dataloader, loss_function, optimizer):
         optimizer.step()
 
 
-def testing_loop(model, dataloader):
-    model.eval()
+def testing_loop(model, dataloader, loss_function):
     accuracy = 0.0
-    for x, y in dataloader:
-        prediction = model(x)
-        accuracy = accuracy + (prediction.round() == y).float().mean()
+    epoch_loss = 0.0
+    model.eval()
+    with torch.no_grad():
+        for x, y in dataloader:
+            prediction = model(x)
+            loss = loss_function(prediction, y)
+            epoch_loss = epoch_loss + loss.item()
+            accuracy = accuracy + (prediction.round() == y).float().mean()
+    epoch_loss = epoch_loss / len(dataloader)
     accuracy = accuracy / len(dataloader)
-    return accuracy
+    return accuracy, epoch_loss

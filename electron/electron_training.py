@@ -20,7 +20,7 @@ additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qo
 
 def command_line():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--filename", help="ROOT file containing the training data set", type=str, required=True)
+    parser.add_argument("-f", "--filename", help="NumPy base filename containing dataset", type=str, required=True)
     # parameters
     parser.add_argument("--epochs", help="Number of epochs", type=int, default=1024)
     parser.add_argument("--batch", help="Batch size", type=int, default=512)
@@ -37,46 +37,22 @@ def command_line():
 def __main__():
     device = "cpu"
     arguments = command_line()
-    dataframe, columns = load_data(arguments.filename)
-    print(f"Columns in the table: {len(dataframe)}")
-    print(columns)
-    if label not in columns:
-        print("Missing labels.")
-        return
-    labels = dataframe[label].astype(int)
-    if basic_training_column not in columns:
-        print("Missing training data.")
-        return
-    for column in additional_training_columns:
-        if column not in columns:
-            print("Missing additional training data.")
-            return
-    trainining_columns = additional_training_columns
-    trainining_columns.append(basic_training_column)
-    print(f"Columns for training: {len(trainining_columns)}")
-    print(f"Entries in the table: {len(dataframe[basic_training_column])}")
-    data = [dataframe[column] for column in trainining_columns]
-    # split into electrons and other particles
-    data = np.hstack([data[i].reshape(len(data[0]), 1) for i in range(len(data))])
-    data_electron = data[labels == 1]
-    data_other = data[labels == 0]
-    print(f"Number of electrons ({len(data_electron)}) and other particles ({len(data_other)}) in data set")
-    # select the same number of other particles as there are electrons
-    rng = np.random.default_rng()
-    rng.shuffle(data_other)
-    data_other = data_other[:len(data_electron)]
-    data = np.vstack((data_electron, data_other))
-    labels_electron = np.ones((len(data_electron), 1), dtype=int)
-    labels_other = np.zeros((len(data_other), 1), dtype=int)
-    labels = np.vstack((labels_electron, labels_other))
-    # create training and testing data set
-    data_train, data_test, labels_train, labels_test = train_test_split(data, labels, test_size=0.3)
+    # create training, validation, and testing data sets
+    data_train = np.load(f"{arguments.filename}_train_data.npy")
+    labels_train = np.load(f"{arguments.filename}_train_labels.npy")
     print(f"Training set size: {len(data_train)}")
+    data_validation = np.load(f"{arguments.filename}_valid_data.npy")
+    labels_validation = np.load(f"{arguments.filename}_valid_labels.npy")
+    print(f"Validation set size: {len(data_validation)}")
+    data_test = np.load(f"{arguments.filename}_test_data.npy")
+    labels_test = np.load(f"{arguments.filename}_test_labels.npy")
     print(f"Test set size: {len(data_test)}")
-    training_data = ElectronDataset(torch.FloatTensor(data_train), torch.FloatTensor(labels_train))
-    test_data = ElectronDataset(torch.FloatTensor(data_test), torch.FloatTensor(labels_test))
-    training_dataloader = DataLoader(training_data, batch_size=arguments.batch, shuffle=True)
-    test_dataloader = DataLoader(test_data, batch_size=arguments.batch, shuffle=True)
+    training_dataset = ElectronDataset(torch.FloatTensor(data_train), torch.FloatTensor(labels_train))
+    validation_dataset = ElectronDataset(torch.FloatTensor(data_validation), torch.FloatTensor(labels_validation))
+    test_dataset = ElectronDataset(torch.FloatTensor(data_test), torch.FloatTensor(labels_test))
+    training_dataloader = DataLoader(training_dataset, batch_size=arguments.batch)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=arguments.batch)
+    test_dataloader = DataLoader(test_dataset, batch_size=arguments.batch)
     # model
     num_features = data_train.shape[1]
     if arguments.normalize:
@@ -98,25 +74,36 @@ def __main__():
     optimizer = torch.optim.Adam(model.parameters(), lr=arguments.learning)
     best_accuracy = -np.inf
     accuracy_history = list()
+    loss_history = list()
     best_weights = None
     for epoch in range(0, num_epochs):
         print(f"Epoch {epoch + 1}/{num_epochs}")
         training_loop(model, training_dataloader, loss_function, optimizer)
-        accuracy = testing_loop(model, test_dataloader)
+        accuracy, loss = testing_loop(model, validation_dataloader, loss_function)
         accuracy_history.append(accuracy * 100.0)
+        loss_history.append(loss)
         print(f"\tAccuracy: {accuracy * 100.0:.2f}%")
+        print(f"\tLoss: {loss:.6f}")
         if accuracy > best_accuracy:
             best_accuracy = accuracy
             best_weights = copy.deepcopy(model.state_dict())
     model.load_state_dict(best_weights)
     print(f"Best Accuracy: {best_accuracy * 100.0:.2f}%")
+    accuracy, loss = testing_loop(model, test_dataloader, loss_function)
+    print(f"Test Accuracy: {accuracy * 100.0:.2f}%")
+    print(f"Test Loss: {loss:.6f}%")
     # plotting
     if arguments.plot:
         epochs = np.arange(0, num_epochs)
         plt.plot(epochs, accuracy_history, "r", label="Validation accuracy")
         plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
+        plt.ylabel("Validation Accuracy")
         plt.legend(loc="lower right")
+        plt.show()
+        plt.plot(epochs, loss_history, "r", label="Validation loss")
+        plt.xlabel("Epochs")
+        plt.ylabel("Validation Loss")
+        plt.legend(loc="upper right")
         plt.show()
     # save model
     if arguments.save:
