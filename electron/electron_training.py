@@ -2,12 +2,11 @@ import argparse
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import DataLoader
 from torch import nn
 
-from utilities import load_data, ElectronDataset, training_loop, testing_loop
+from utilities import ElectronDataset, training_loop, testing_loop
 from networks import ElectronNetwork, ElectronNetworkNormalized
 
 
