@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 
-from utilities import load_data
+from utilities import load_data, shuffle_data
 
 
 label = "mcp_electron"
@@ -53,14 +53,17 @@ def __main__():
     labels_electron = np.ones((len(data_electron[:max_train]), 1), dtype=int)
     labels_other = np.zeros((len(data_other[:max_train]), 1), dtype=int)
     labels_train = np.vstack((labels_electron, labels_other))
+    data_train, labels_train = shuffle_data(rng, data_train, labels_train)
     data_validation = np.vstack((data_electron[max_train:max_validation], data_other[max_train:max_validation]))
     labels_electron = np.ones((len(data_electron[max_train:max_validation]), 1), dtype=int)
     labels_other = np.zeros((len(data_other[max_train:max_validation]), 1), dtype=int)
     labels_validation = np.vstack((labels_electron, labels_other))
+    data_validation, labels_validation = shuffle_data(rng, data_validation, labels_validation)
     data_test = np.vstack((data_electron[max_validation:], data_other[max_validation:len(data_electron)]))
     labels_electron = np.ones((len(data_electron[max_validation:]), 1), dtype=int)
     labels_other = np.zeros((len(data_other[max_validation:len(data_electron)]), 1), dtype=int)
-    labels_test = np.vstack((labels_electron, labels_other))   
+    labels_test = np.vstack((labels_electron, labels_other))
+    data_test, labels_test = shuffle_data(rng, data_test, labels_test)
     # save train, validation, test datasets
     print(f"Training dataset size: {len(data_train)}")
     print(f"Validation dataset size: {len(data_validation)}")
