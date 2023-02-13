@@ -21,6 +21,7 @@ def command_line():
     parser.add_argument("--model", help="Name of the file containing the model.", type=str, required=True)
     parser.add_argument("--batch", help="Batch size", type=int, default=512)
     parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
+    parser.add_argument("--int8", help="Quantize the trained model to INT8", action="store_true")
     return parser.parse_args()
 
 
@@ -64,17 +65,21 @@ def __main__():
     test_dataloader = DataLoader(test_dataset, batch_size=arguments.batch, shuffle=True)
     # read model
     num_features = data.shape[1]
-    if "onnx" in arguments.model:
-        model = onnx2torch.convert(arguments.model)
+    if arguments.int8:
+        model = torch.load(arguments.model)
+        model.eval()
     else:
-        if arguments.normalize:
-            model = ElectronNetworkNormalized(num_features=num_features)
+        if "onnx" in arguments.model:
+            model = onnx2torch.convert(arguments.model)
         else:
-            model = ElectronNetwork(num_features=num_features)
-        model.eval()
-        weights = torch.load(arguments.model)
-        model.load_state_dict(weights)
-        model.eval()
+            if arguments.normalize:
+                model = ElectronNetworkNormalized(num_features=num_features)
+            else:
+                model = ElectronNetwork(num_features=num_features)
+            model.eval()
+            weights = torch.load(arguments.model)
+            model.load_state_dict(weights)
+            model.eval()
     print(f"Device: {device}")
     model.to(device)
     print()
