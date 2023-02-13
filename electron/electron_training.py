@@ -133,7 +133,7 @@ def __main__():
         # save model
         if arguments.save:
             print("Saving INT8 model to disk")
-            torch.save(model_int8.state_dict(), "electron_model_int8.pth")
+            torch.save(model_int8.state_dict, "electron_model_int8.pth")
             print("Saving INT8 model to ONNX format")
             dummy_input = torch.randn(1, num_features)
             torch.onnx.export(model_int8, dummy_input, "electron_model_int8.onnx", export_params=True)
