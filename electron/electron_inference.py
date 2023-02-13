@@ -67,7 +67,6 @@ def __main__():
     num_features = data.shape[1]
     if arguments.int8:
         model = torch.load(arguments.model)
-        model.eval()
     else:
         if "onnx" in arguments.model:
             model = onnx2torch.convert(arguments.model)
@@ -76,10 +75,8 @@ def __main__():
                 model = ElectronNetworkNormalized(num_features=num_features)
             else:
                 model = ElectronNetwork(num_features=num_features)
-            model.eval()
             weights = torch.load(arguments.model)
             model.load_state_dict(weights)
-            model.eval()
     print(f"Device: {device}")
     model.to(device)
     print()
