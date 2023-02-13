@@ -87,10 +87,13 @@ def __main__():
             best_accuracy = accuracy
             best_weights = copy.deepcopy(model.state_dict())
     model.load_state_dict(best_weights)
+    print()
     print(f"Best Accuracy: {best_accuracy * 100.0:.2f}%")
+    print()
     accuracy, loss = testing_loop(model, test_dataloader, loss_function)
     print(f"Test Accuracy: {accuracy * 100.0:.2f}%")
     print(f"Test Loss: {loss:.6f}%")
+    print()
     # plotting
     if arguments.plot:
         epochs = np.arange(0, num_epochs)
