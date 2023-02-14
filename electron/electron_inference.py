@@ -18,6 +18,7 @@ model_columns = ["eop", "best_pt", "best_qop", "chi2", "chi2V", "first_qop", "nd
 def command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--filename", help="File containing the data set", type=str, required=True)
+    parser.add_argument("--nocuda", help="Disable CUDA", action="store_true")
     parser.add_argument("--model", help="Name of the file containing the model.", type=str, required=True)
     parser.add_argument("--batch", help="Batch size", type=int, default=512)
     parser.add_argument("--normalize", help="Use a normalization layer", action="store_true")
@@ -26,8 +27,11 @@ def command_line():
 
 
 def __main__():
-    device = "cpu"
     arguments = command_line()
+    if not arguments.nocuda and torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
     if ".root" in arguments.filename:
         dataframe, columns = load_data(arguments.filename)
         print(f"Columns in the table: {len(dataframe)}")
@@ -61,7 +65,7 @@ def __main__():
         data = np.load(f"{arguments.filename}_test_data.npy")
         labels = np.load(f"{arguments.filename}_test_labels.npy")
         print(f"Test set size: {len(data)}")
-    test_dataset = ElectronDataset(torch.FloatTensor(data), torch.FloatTensor(labels))
+    test_dataset = ElectronDataset(torch.tensor(datadtype=torch.float32, device=device), torch.tensor(labelsdtype=torch.float32, device=device))
     test_dataloader = DataLoader(test_dataset, batch_size=arguments.batch, shuffle=True)
     # read model
     num_features = data.shape[1]
