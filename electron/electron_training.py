@@ -20,6 +20,7 @@ additional_training_columns = ["best_pt", "best_qop", "chi2", "chi2V", "first_qo
 def command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--filename", help="NumPy base filename containing dataset", type=str, required=True)
+    parser.add_argument("--nocuda", help="Disable CUDA", action="store_true")
     # parameters
     parser.add_argument("--epochs", help="Number of epochs", type=int, default=1024)
     parser.add_argument("--batch", help="Batch size", type=int, default=512)
@@ -34,8 +35,11 @@ def command_line():
 
 
 def __main__():
-    device = "cpu"
     arguments = command_line()
+    if not arguments.nocuda and torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
     # create training, validation, and testing data sets
     data_train = np.load(f"{arguments.filename}_train_data.npy")
     labels_train = np.load(f"{arguments.filename}_train_labels.npy")
@@ -46,9 +50,9 @@ def __main__():
     data_test = np.load(f"{arguments.filename}_test_data.npy")
     labels_test = np.load(f"{arguments.filename}_test_labels.npy")
     print(f"Test set size: {len(data_test)}")
-    training_dataset = ElectronDataset(torch.FloatTensor(data_train), torch.FloatTensor(labels_train))
-    validation_dataset = ElectronDataset(torch.FloatTensor(data_validation), torch.FloatTensor(labels_validation))
-    test_dataset = ElectronDataset(torch.FloatTensor(data_test), torch.FloatTensor(labels_test))
+    training_dataset = ElectronDataset(torch.tensor(data_train, dtype=torch.float32, device=device), torch.tensor(labels_train, dtype=torch.float32, device=device))
+    validation_dataset = ElectronDataset(torch.tensor(data_validation, dtype=torch.float32, device=device), torch.tensor(labels_validation, dtype=torch.float32, device=device))
+    test_dataset = ElectronDataset(torch.tensor(data_test, dtype=torch.float32, device=device), torch.tensor(labels_test, dtype=torch.float32, device=device))
     training_dataloader = DataLoader(training_dataset, batch_size=arguments.batch)
     validation_dataloader = DataLoader(validation_dataset, batch_size=arguments.batch)
     test_dataloader = DataLoader(test_dataset, batch_size=arguments.batch)
