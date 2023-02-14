@@ -1,6 +1,5 @@
 ROOT~=6.26
-tensorflow~=2.7
+pytorch~=1.8
 numpy~=1.22
 matplotlib~=3.5
-onnx~=1.11
-tf2onnx~=1.9
+onnx2torch~=1.5
