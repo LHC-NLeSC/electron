@@ -1,5 +1,6 @@
 import argparse
 import copy
+from time import perf_counter
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -79,6 +80,7 @@ def __main__():
     accuracy_history = list()
     loss_history = list()
     best_weights = None
+    start_time = perf_counter()
     for epoch in range(0, num_epochs):
         print(f"Epoch {epoch + 1}/{num_epochs}")
         training_loop(model, training_dataloader, loss_function, optimizer)
@@ -90,8 +92,10 @@ def __main__():
         if accuracy > best_accuracy:
             best_accuracy = accuracy
             best_weights = copy.deepcopy(model.state_dict())
+    end_time = perf_counter()
     model.load_state_dict(best_weights)
     print()
+    print(f"Training time: {end_time - start_time:.2f} seconds")
     print(f"Best Accuracy: {best_accuracy * 100.0:.2f}%")
     print()
     accuracy, loss = testing_loop(model, test_dataloader, loss_function)

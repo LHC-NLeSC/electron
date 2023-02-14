@@ -1,4 +1,5 @@
 import argparse
+from time import perf_counter
 import numpy as np
 import torch
 from torch import nn
@@ -88,9 +89,12 @@ def __main__():
     print()
     # inference
     loss_function = nn.BCELoss()
+    start_time = perf_counter()
     accuracy, loss = testing_loop(model, test_dataloader, loss_function)
+    end_time = perf_counter()
     print(f"Accuracy: {accuracy * 100.0:.2f}%")
     print(f"Loss: {loss}")
+    print(f"Inference time: {end_time - start_time:.2f} seconds")
 
 if __name__ == "__main__":
     __main__()
